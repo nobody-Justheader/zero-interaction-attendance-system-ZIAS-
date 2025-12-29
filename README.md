@@ -2,6 +2,18 @@
 
 Advanced IoT-based attendance tracking system using RFID and motion sensors for automatic, contactless attendance management.
 
+**Designed specifically for Indian educational institutions** - scalable from government schools to universities, with flexibility for varying smartphone penetration and budget constraints.
+
+## Core Philosophy
+
+- **Primary System**: RFID cards + PIR sensors (100% coverage, no smartphone required)
+- **Optional Enhancement**: BLE beacons for students with smartphones
+- **Offline-First**: Works without continuous internet connectivity
+- **Cost-Effective**: Rs. 50-150 per student
+- **Scalable**: From 50 students to 10,000+ students
+
+See `docs/DEPLOYMENT_INDIA.md` for detailed deployment strategies.
+
 ## Features
 
 - **Zero User Interaction**: Automatic detection via RFID and PIR sensors

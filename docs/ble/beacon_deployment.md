@@ -1,5 +1,23 @@
 # BLE Beacon Configuration for ZIAS
 
+## IMPORTANT: BLE is Optional Enhancement
+
+**BLE beacons are NOT required for ZIAS to function. They are an optional enhancement for institutions where most students have smartphones.**
+
+**Primary System**: RFID card readers + PIR sensors (works for all students)  
+**Optional Add-on**: BLE beacons (for students with smartphones)
+
+**Recommended for**:
+- Private schools/universities with high smartphone penetration (>70%)
+- Tech-savvy institutions
+- Environments where students always carry phones
+
+**Not recommended for**:
+- Government schools
+- Budget-constrained institutions
+- Areas with low smartphone ownership
+- Students below high school age
+
 ## Overview
 
 This document describes the BLE beacon deployment strategy for smartphone-based attendance tracking as a complement to RFID/PIR sensors.
