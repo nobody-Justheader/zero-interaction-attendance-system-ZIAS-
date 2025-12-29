@@ -1,0 +1,64 @@
+// Configuration file for ESP32 Universal Node
+// Copy this to config.h and customize for your device
+// DO NOT commit config.h to version control!
+
+#ifndef CONFIG_H
+#define CONFIG_H
+
+// ============================================
+// WiFi Configuration
+// ============================================
+#define WIFI_SSID "your_wifi_network"
+#define WIFI_PASSWORD "your_wifi_password"
+
+// ============================================
+// Device Configuration
+// ============================================
+#define DEVICE_NAME "room1_node1"  // Unique device identifier
+#define CLUSTER_ID 1                // Room/cluster ID
+
+// ============================================
+// MQTT Broker Configuration
+// ============================================
+#define MQTT_BROKER "10.10.0.4"    // MQTT broker IP
+#define MQTT_PORT 1883
+#define MQTT_TOPIC_PREFIX "zias"
+
+// ============================================
+// Hardware Pin Configuration (ESP32)
+// ============================================
+
+// RFID Reader (MFRC522 on SPI)
+#define GPIO_RFID_RST 22
+#define GPIO_RFID_SS  21
+// SPI pins: MOSI=23, MISO=19, SCK=18 (default ESP32 SPI)
+
+// PIR Motion Sensor
+#define GPIO_PIR 4
+
+// LED (built-in)
+#define LED_BUILTIN 2
+
+// ============================================
+// Optional: BLE Beacon Configuration
+// Uncomment to enable BLE beacon mode
+// ============================================
+//#define ENABLE_BLE
+#define BLE_BEACON_UUID "zias-main-101-entry"  // Beacon UUID
+#define BLE_TX_POWER -59  // Transmission power (dBm)
+
+// ============================================
+// Timing Configuration
+// ============================================
+#define DEBOUNCE_DELAY 2500        // milliseconds
+#define WIFI_CONNECT_TIMEOUT 20000 // milliseconds
+#define MQTT_RECONNECT_DELAY 5000  // milliseconds
+
+// ============================================
+// Power Management (Optional)
+// Uncomment for battery-powered operation
+// ============================================
+//#define ENABLE_DEEP_SLEEP
+#define SLEEP_DURATION 60  // seconds
+
+#endif
