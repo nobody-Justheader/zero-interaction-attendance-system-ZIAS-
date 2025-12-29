@@ -118,18 +118,19 @@ services:
     volumes:
       - ./backend:/app
     command: python -m mqtt.event_processor
-  # Web Dashboard (optional - React/Vue frontend)
-  # dashboard:
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: Dockerfile
-  #   container_name: zias_dashboard
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     REACT_APP_API_URL: http://localhost:8000
-  #   networks:
-  #     - zias_network
+
+  # Frontend (React + Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: zias_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    networks:
+      - zias_network
 
 networks:
   zias_network:
