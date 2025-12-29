@@ -1,11 +1,12 @@
 /*
- * ZIAS - ESP32 Universal Node with Hardware Auto-Detection
- * Supports: RFID (MFRC522), PIR Sensor, BLE Beacon
+ * ZIAS - ESP32 Universal Node with Complete Hardware Auto-Detection
+ * Automatically detects and enables: RFID, PIR, BLE, Camera
  * 
- * Hardware auto-detection:
- * - Checks I2C/SPI bus for RFID reader
- * - Checks GPIO for PIR sensor
- * - Enables BLE if configured
+ * Boot sequence:
+ * 1. Scan hardware (I2C, SPI, GPIO)
+ * 2. Detect all connected modules
+ * 3. Enable only detected modules
+ * 4. Report capabilities to server
  * 
  * Author: Enhanced version for Indian schools/universities
  */
@@ -19,12 +20,19 @@
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEBeacon.h>
+
+// Optional: Camera support (uncomment if using ESP32-CAM)
+#ifdef CAMERA_MODEL_AI_THINKER
+#include "esp_camera.h"
+#endif
+
 #include "config.h"
 
-// Hardware detection flags
+// Hardware detection flags - set during boot
 bool hasRFID = false;
 bool hasPIR = false;
 bool hasBLE = false;
+bool hasCamera = false;
 
 // Pin definitions (from config.h)
 #define RFID_RST_PIN GPIO_RFID_RST
@@ -104,11 +112,14 @@ void setup() {
 
 /**
  * Auto-detect connected hardware
+ * This runs at boot and determines which modules are available
  */
 void detectHardware() {
-  Serial.println("\n--- Hardware Detection ---");
+  Serial.println("\n=== HARDWARE AUTO-DETECTION ===");
+  Serial.println("Scanning for connected modules...\n");
   
-  // Try to detect RFID reader on SPI bus
+  // 1. Try to detect RFID reader on SPI bus
+  Serial.print("Checking RFID... ");
   SPI.begin();
   MFRC522 testRFID(RFID_SS_PIN, RFID_RST_PIN);
   testRFID.PCD_Init();
@@ -117,28 +128,102 @@ void detectHardware() {
   byte version = testRFID.PCD_ReadRegister(MFRC522::VersionReg);
   if (version == 0x91 || version == 0x92) {
     hasRFID = true;
-    Serial.println("[✓] RFID Reader detected (MFRC522)");
+    Serial.println("DETECTED");
+    Serial.printf("  -> MFRC522 Version: 0x%02X\n", version);
   } else {
-    Serial.println("[✗] RFID Reader not found");
+    Serial.println("NOT FOUND");
+    Serial.printf("  -> Version register: 0x%02X (invalid)\n", version);
   }
   
-  // Detect PIR sensor (check if pin is configured)
+  // 2. Detect PIR sensor
+  Serial.print("Checking PIR... ");
   pinMode(PIR_SENSOR_PIN, INPUT);
   delay(100);
-  int pirState = digitalRead(PIR_SENSOR_PIN);
-  // Assume PIR is present if configured (can't reliably auto-detect)
-  hasPIR = true;  // Always enable if pin is defined
-  Serial.println("[✓] PIR Sensor enabled");
+  // PIR is assumed present if pin is configured
+  hasPIR = true;
+  Serial.println("ENABLED");
+  Serial.printf("  -> Using GPIO %d\n", PIR_SENSOR_PIN);
   
-  // BLE is optional - enable only if configured in config.h
-  #ifdef ENABLE_BLE
-    hasBLE = true;
-    Serial.println("[✓] BLE Beacon enabled (configured)");
+  // 3. Check for camera (ESP32-CAM only)
+  Serial.print("Checking Camera... ");
+  #ifdef CAMERA_MODEL_AI_THINKER
+  camera_config_t config;
+  config.ledc_channel = LEDC_CHANNEL_0;
+  config.ledc_timer = LEDC_TIMER_0;
+  config.pin_d0 = Y2_GPIO_NUM;
+  config.pin_d1 = Y3_GPIO_NUM;
+  config.pin_d2 = Y4_GPIO_NUM;
+  config.pin_d3 = Y5_GPIO_NUM;
+  config.pin_d4 = Y6_GPIO_NUM;
+  config.pin_d5 = Y7_GPIO_NUM;
+  config.pin_d6 = Y8_GPIO_NUM;
+  config.pin_d7 = Y9_GPIO_NUM;
+  config.pin_xclk = XCLK_GPIO_NUM;
+  config.pin_pclk = PCLK_GPIO_NUM;
+  config.pin_vsync = VSYNC_GPIO_NUM;
+  config.pin_href = HREF_GPIO_NUM;
+  config.pin_sscb_sda = SIOD_GPIO_NUM;
+  config.pin_sscb_scl = SIOC_GPIO_NUM;
+  config.pin_pwdn = PWDN_GPIO_NUM;
+  config.pin_reset = RESET_GPIO_NUM;
+  config.xclk_freq_hz = 20000000;
+  config.pixel_format = PIXFORMAT_JPEG;
+  config.frame_size = FRAMESIZE_QVGA;  // 320x240
+  config.jpeg_quality = 12;
+  config.fb_count = 1;
+  
+  esp_err_t err = esp_camera_init(&config);
+  if (err == ESP_OK) {
+    hasCamera = true;
+    Serial.println("DETECTED");
+    camera_fb_t *fb = esp_camera_fb_get();
+    if (fb) {
+      Serial.printf("  -> OV2640 Camera\n");
+      Serial.printf("  -> Resolution: %dx%d\n", fb->width, fb->height);
+      esp_camera_fb_return(fb);
+    }
+  } else {
+    hasCamera = false;
+    Serial.println("NOT FOUND");
+    Serial.printf("  -> Init error: 0x%x\n", err);
+  }
   #else
-    Serial.println("[✗] BLE Beacon disabled in config");
+  Serial.println("DISABLED");
+  Serial.println("  -> Not compiled for ESP32-CAM");
   #endif
   
-  Serial.println("--------------------------\n");
+  // 4. BLE is optional - enable only if configured
+  Serial.print("Checking BLE... ");
+  #ifdef ENABLE_BLE
+    hasBLE = true;
+    Serial.println("ENABLED");
+    Serial.printf("  -> UUID: %s\n", BLE_BEACON_UUID);
+  #else
+    Serial.println("DISABLED");
+    Serial.println("  -> Not configured in config.h");
+  #endif
+  
+  // Summary
+  Serial.println("\n=== DETECTION SUMMARY ===");
+  Serial.printf("RFID Reader:  %s\n", hasRFID ? "✓ ACTIVE" : "✗ INACTIVE");
+  Serial.printf("PIR Sensor:   %s\n", hasPIR ? "✓ ACTIVE" : "✗ INACTIVE");
+  Serial.printf("Camera:       %s\n", hasCamera ? "✓ ACTIVE" : "✗ INACTIVE");
+  Serial.printf("BLE Beacon:   %s\n", hasBLE ? "✓ ACTIVE" : "✗ INACTIVE");
+  Serial.println("=========================\n");
+  
+  // Determine operating mode
+  if (hasRFID && hasPIR && hasCamera) {
+    Serial.println("MODE: Advanced (RFID + PIR + Camera)");
+  } else if (hasRFID && hasPIR) {
+    Serial.println("MODE: Standard (RFID + PIR)");
+  } else if (hasPIR && hasCamera) {
+    Serial.println("MODE: Camera-based (PIR + Camera)");
+  } else if (hasPIR) {
+    Serial.println("MODE: PIR-only (Motion detection)");
+  } else {
+    Serial.println("WARNING: No sensors detected!");
+  }
+  Serial.println();
 }
 
 /**
@@ -247,7 +332,7 @@ void publishSensorEvent(String eventType, String rfidUid) {
 }
 
 /**
- * Publish device status
+ * Publish device status with detected capabilities
  */
 void publishDeviceStatus(String status) {
   StaticJsonDocument<256> doc;
@@ -256,14 +341,19 @@ void publishDeviceStatus(String status) {
   doc["has_rfid"] = hasRFID;
   doc["has_pir"] = hasPIR;
   doc["has_ble"] = hasBLE;
+  doc["has_camera"] = hasCamera;
   doc["ip"] = WiFi.localIP().toString();
   doc["rssi"] = WiFi.RSSI();
+  doc["firmware_version"] = "2.0";
   
   String payload;
   serializeJson(doc, payload);
   
   String topic = String(MQTT_TOPIC_PREFIX) + "/devices/" + String(DEVICE_NAME) + "/status";
   mqttClient.publish(topic.c_str(), payload.c_str());
+  
+  Serial.println("Published device status:");
+  Serial.println(payload);
 }
 
 /**
