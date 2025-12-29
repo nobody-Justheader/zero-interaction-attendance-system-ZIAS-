@@ -1,0 +1,30 @@
+// Configuration file for RFID Node
+// Copy this file to config.h and fill in your credentials
+// DO NOT commit config.h to version control!
+
+#ifndef CONFIG_H
+#define CONFIG_H
+
+// WiFi Configuration
+#define WIFI_SSID "your_wifi_network"
+#define WIFI_PASSWORD "your_wifi_password"
+
+// Device Configuration
+#define DEVICE_NAME "room1_PIR_1"
+#define CLUSTER_ID 1
+
+// Server Configuration  
+#define SERVER_IP "10.10.0.4"
+#define SERVER_PORT 80
+#define API_ENDPOINT "/IOT/insert_data.php"
+
+// Hardware Pin Configuration
+#define RFID_RST_PIN 5
+#define RFID_SS_PIN 15
+#define PIR_SENSOR_PIN 0
+
+// Timing Configuration
+#define DEBOUNCE_DELAY 2500  // milliseconds
+#define WIFI_CONNECT_TIMEOUT 10000  // milliseconds
+
+#endif
